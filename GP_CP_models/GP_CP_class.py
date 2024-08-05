@@ -404,7 +404,7 @@ class GP_CP_Marginal():
             
             return jnp.mean(sum_diff)
         
-        num_params = jnp.zeros(3000)
+        num_params = jnp.zeros(self.num_particles)
         num_params = num_params[:, None]
         for i, kernel in enumerate(self.particles.particles['kernel']):
             
