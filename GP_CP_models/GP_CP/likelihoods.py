@@ -1,5 +1,3 @@
-from uicsmodels.gaussianprocesses.wputil import vec2tril, tril2vec, construct_wishart
-
 from abc import ABC, abstractmethod
 import jax.numpy as jnp
 import jax.scipy as jsp
