@@ -12,7 +12,7 @@ from jaxkern.computations import (
 from typing import Dict, List, Optional
 
 class FBN_CP(jk.base.AbstractKernel):
-    """The periodic kernel.
+    """The Fractional Brownian Motion kernel.
 
     Key reference is MacKay 1998 - "Introduction to Gaussian processes".
     """
@@ -22,7 +22,7 @@ class FBN_CP(jk.base.AbstractKernel):
         self.temp = temp
         self.x0 = x0
         self._stationary = True
-        self.name = 'Fractional Brownian Motion'
+        self.name = 'FBN'
 
     def __call__(
         self, params: Dict, x: Float[Array, "1 D"], y: Float[Array, "1 D"]
