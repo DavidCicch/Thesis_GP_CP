@@ -49,7 +49,7 @@ class FBN_CP(jk.base.AbstractKernel):
         """Evaluate the kernel on a pair of inputs :math:`(x, y)` with length-scale parameter :math:`\\ell` and variance :math:`\\sigma`
 
         .. math::
-            k(x, y) = \\sigma^2 \\exp \\Bigg( -0.5 \\sum_{i=1}^{d} \\Bigg)
+            k(x, y) = 1/2 (|x|^(2h) + |y|^(2h) - |x - y|^(2h))
 
         Args:
             x (jax.Array): The left hand argument of the kernel function's call.
@@ -67,7 +67,7 @@ class FBN_CP(jk.base.AbstractKernel):
     def check_side_mult(self, x_, y_, params):
 
         def returnxcp(xcp, params, x, y):
-            new_params = dict(lengthscale = params['hurst'][xcp])
+            new_params = dict(hurst = params["hurst"][xcp])
             cov = 1/2 * (jnp.abs(x)**(2 * new_params["hurst"]) + jnp.abs(y)**(2 * new_params["hurst"]) - jnp.abs(x- y)**(2 * new_params["hurst"]))
             return cov.squeeze()
         
