@@ -120,8 +120,8 @@ class Linear_CP_mult_output(jk.base.AbstractKernel):
     
     def check_output_dim(self, x_, y_, params):
 
-        xcp = x_//self.y_len
-        ycp = y_//self.y_len
+        xcp = jnp.sum(x_//self.y_len)
+        ycp = jnp.sum(y_//self.y_len)
         
         val = jax.lax.cond(xcp == ycp, self.check_side_mult, self.zero_func, xcp, params, x_, y_, xcp)
 
