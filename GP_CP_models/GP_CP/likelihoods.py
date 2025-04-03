@@ -1,5 +1,3 @@
-from uicsmodels.gaussianprocesses.wputil import vec2tril, tril2vec, construct_wishart
-
 from abc import ABC, abstractmethod
 import jax.numpy as jnp
 import jax.scipy as jsp
@@ -14,7 +12,6 @@ from distrax._src.distributions.distribution_from_tfp import distribution_from_t
 from tensorflow_probability.substrates import jax as tfp
 import sys
 sys.path.append('/home/davcic/CP_Testing')
-import Cauchy_class
 
 __all__ = ['AbstractLikelihood', 
            'RepeatedObsLikelihood', 
