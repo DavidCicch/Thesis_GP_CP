@@ -129,8 +129,8 @@ class Linear_CP_mult_output(jk.base.AbstractKernel):
     
     def check_side_mult(self, x_, y_, params, i):
 
-        xcp = jnp.sum(jnp.greater(x_, params["num"]))
-        ycp = jnp.sum(jnp.greater(y_, params["num"]))
+        xcp = jnp.sum(jnp.greater(x_, params[f"num_{i}"]))
+        ycp = jnp.sum(jnp.greater(y_, params[f"num_{i}"]))
         
         val = jax.lax.cond(xcp == ycp, self.returnxcp, self.zero_func, xcp, params, x_, y_, i)
         
