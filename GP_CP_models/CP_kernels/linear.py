@@ -114,7 +114,7 @@ class Linear_CP_mult_output(jk.base.AbstractKernel):
 
         self.y_len = len(x)/self.n
 
-        K = jax.vmap(lambda x_, params: jax.vmap(lambda y_: self.check_side_mult(x_, y_, params))(y), in_axes=(0, None))(x, params)
+        K = jax.vmap(lambda x_, params: jax.vmap(lambda y_: self.check_output_dim(x_, y_, params))(y), in_axes=(0, None))(x, params)
         new_K = K + self.temp*jnp.eye(x.shape[0], y.shape[0])
         return new_K
     
