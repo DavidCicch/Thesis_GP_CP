@@ -87,7 +87,7 @@ class Linear_CP_mult_output(jk.base.AbstractKernel):
         self.temp = temp
         self.x0 = x0
         self._stationary = True
-        self.name = 'Linear'
+        self.name = 'Linear_mult_output'
         self.n = n
 
     def __call__(
@@ -96,7 +96,7 @@ class Linear_CP_mult_output(jk.base.AbstractKernel):
         if x.shape != ():
             return self.cross_covariance(params, x, y)
         if x.shape == ():
-            return self.check_side_mult(x, y, params)
+            return self.check_output_dim(x, y, params)
     
     def cross_covariance(self, params: Dict, x, y):
         """Evaluate the kernel on a pair of inputs :math:`(x, y)` with variance parameter :math:`\\sigma`
@@ -113,38 +113,39 @@ class Linear_CP_mult_output(jk.base.AbstractKernel):
         """
 
         self.y_len = len(x)/self.n
-
         K = jax.vmap(lambda x_, params: jax.vmap(lambda y_: self.check_output_dim(x_, y_, params))(y), in_axes=(0, None))(x, params)
         new_K = K + self.temp*jnp.eye(x.shape[0], y.shape[0])
         return new_K
     
     def check_output_dim(self, x_, y_, params):
-
-        xcp = jnp.sum(x_//self.y_len)
-        ycp = jnp.sum(y_//self.y_len)
         
-        val = jax.lax.cond(xcp == ycp, self.check_side_mult, self.zero_func, xcp, params, x_, y_)
+        xcp = jnp.sum((x_*self.y_len)//self.y_len).astype(int)
+        print(xcp)
+        ycp = jnp.sum((y_*self.y_len)//self.y_len).astype(int)
+        val = jax.lax.cond(xcp == ycp, self.check_side_mult, self.zero_func, x_, y_, params, xcp)
 
         return val
     
-    def check_side_mult(self, i, x_, y_, params):
-
-        xcp = jnp.sum(jnp.greater(x_, params[f"num_{i}"]))
-        ycp = jnp.sum(jnp.greater(y_, params[f"num_{i}"]))
+    def check_side_mult(self, x_, y_, params, i):
+        
+        xcp = jnp.sum(jnp.greater(x_, params['num']+i))*(i+1)
+        # jax.debug.print("{x}", x=xcp)
+        ycp = jnp.sum(jnp.greater(y_, params['num']+i))*(i+1)
         
         val = jax.lax.cond(xcp == ycp, self.returnxcp, self.zero_func, xcp, params, x_, y_, i)
         
         return val
     
-    def returnxcp(self, xcp, params, x, y, i):
-            new_params = dict(
-                        bias = params[f'bias_{i}'][xcp],
-                        variance = params[f'variance_{i}'][xcp],
-                        )
-            cov = new_params['bias'] + new_params["variance"] * x * y
-            return cov.squeeze()
+    def returnxcp(self, xcp, params, x, y, i):        
+        new_params = dict(
+                    bias = params['bias'][xcp+i],
+                    variance = params['variance'][xcp+i],
+                    )
+        cov = new_params['bias'] + new_params["variance"] * (x/(i+1)) * (y/(i+1))
+        # jax.debug.print("{x}", x=x/(i+1))
+        return cov.squeeze()
         
-    def zero_func(self, xcp, params, x_, y_, i):
+    def zero_func(self, xcp, params, x_, y_, i=0):
         return 0.  
 
     def init_params(self, key: jrnd.KeyArray) -> Dict:
