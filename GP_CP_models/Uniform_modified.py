@@ -24,7 +24,7 @@ class Uniform(distribution.Distribution):
 
   equiv_tfp_cls = tfd.Uniform
 
-  def __init__(self, low: Numeric = 0., high: Numeric = 1.):
+  def __init__(self, low: Numeric = 0., high: Numeric = 1., max_CP = 0):
     """Initializes a Uniform distribution.
 
     Args:
@@ -36,6 +36,7 @@ class Uniform(distribution.Distribution):
     self._high = conversion.as_float_array(high)
     self._batch_shape = jax.lax.broadcast_shapes(
         self._low.shape, self._high.shape)
+    self._max_cp = max_CP
 
   @property
   def event_shape(self) -> Tuple[int, ...]:
@@ -58,20 +59,44 @@ class Uniform(distribution.Distribution):
 
   @property
   def batch_shape(self) -> Tuple[int, ...]:
-    return self._batch_shape
+    """Shape of batch of distribution samples."""
+    return (self._max_cp, )
+  
+  def nothing(self, x):
+    return x
+  
+  def nan_func(self, x):
+    return jnp.nan
+
+  def helper(self, carry, x):
+    y = jax.lax.cond(carry['count'] > carry['k'], self.nan_func, self.nothing, x)
+    carry['count'] = carry['count'] + 1
+    return carry, y
+  
+  def horizon_check(self, x, vals):
+    k = jnp.sum(~jnp.isnan(vals))
+    # print(k.shape)
+    carry = dict(count = 0,
+                 k = k)
+    carry, y = jax.lax.scan(self.helper, carry, x)
+    return y
 
   def _sample_n(self, key: PRNGKey, n_particles: int, k = None) -> Array:
     """See `Distribution._sample_n`."""
     # new_shape = (k,) + self.batch_shape
     if k == None:
         uniform = jax.random.uniform(
-            key=key, shape=(n_particles, k), dtype=self.range.dtype, minval=0., maxval=1.)
+            key=key, shape=(n_particles, ), dtype=self.range.dtype, minval=0., maxval=1.)
     else:
         uniform = jax.random.uniform(
-            key=key, shape=(n_particles), dtype=self.range.dtype, minval=0., maxval=1.)
+            key=key, shape=(n_particles, self._max_cp), dtype=self.range.dtype, minval=0., maxval=1.)   
     low = jnp.expand_dims(self._low, range(uniform.ndim - self._low.ndim))
     range_ = jnp.expand_dims(self.range, range(uniform.ndim - self.range.ndim))
-    return low + range_ * uniform
+    if k == None:
+      return jnp.squeeze(low + range_ * uniform)
+    else:
+      uniform_k = jax.vmap(lambda a, b: self.horizon_check(a, b), in_axes=(0, 0))(uniform, k)
+    return jnp.squeeze(low + range_ * uniform_k)
 
   def _sample_n_and_log_prob(self, key: PRNGKey, n: int) -> Tuple[Array, Array]:
     """See `Distribution._sample_n_and_log_prob`."""

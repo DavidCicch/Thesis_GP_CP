@@ -60,7 +60,7 @@ class Matern12_CP(jk.base.AbstractKernel):
                           variance = params['variance'][xcp])
             # tau = euclidean_distance(x_, y)
             cov = params["variance"]* jnp.exp(-jnp.abs(x_ - y_)/params['lengthscale'])
-            return cov
+            return cov.squeeze()
         
         def zero_func(xcp, params, x_, y_):
             return 0.
